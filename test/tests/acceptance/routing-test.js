@@ -1,6 +1,7 @@
 import startApp from 'test/helpers/start-app';
 import configuration from 'torii/configuration';
 import AuthenticatedRouteMixin from 'torii/routing/authenticated-route-mixin';
+import authenticatedRoute from 'torii/routing';
 
 var app, container, originalSessionServiceName, originalSessionProvider;
 
@@ -43,4 +44,53 @@ test('route mixin is injected when sessionServiceName is set', function(assert){
   var isMixinAdded = AuthenticatedRouteMixin.detect(applicationRoute);
   assert.ok(isMixinAdded,
     'authenticated route mixin was mixed into to Route class');
+});
+
+test('checkLogin is not called in absense of authenticated routes', function(assert){
+  assert.expect(1);
+  configuration.sessionServiceName = 'session';
+
+  app = startApp({loadInitializers: true});
+  container = app.__container__;
+
+  var called = false;
+  container.register('route:application', Ember.Route.extend({
+    checkLogin: function() {
+      called = true;
+    }
+  }));
+
+  var applicationRoute = container.lookup('route:application');
+  applicationRoute.beforeModel();
+  assert.ok(!called, 'checkLogin was not called');
+
+});
+
+test('checkLogin is called when an authenticated route is present', function(assert){
+  assert.expect(2);
+  configuration.sessionServiceName = 'session';
+
+  var routesConfigured = false;
+
+  app = startApp({
+    loadInitializers: true,
+    routes: function(){
+      routesConfigured = true;
+      authenticatedRoute(this, 'index');
+    }
+  });
+  container = app.__container__;
+
+  var called = false;
+  container.register('route:application', Ember.Route.extend({
+    checkLogin: function() {
+      called = true;
+    }
+  }));
+
+  var applicationRoute = container.lookup('route:application');
+
+  applicationRoute.beforeModel();
+  assert.ok(routesConfigured, 'Router map was called');
+  assert.ok(called, 'checkLogin was called');
 });

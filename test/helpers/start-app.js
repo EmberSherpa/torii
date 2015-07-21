@@ -5,6 +5,7 @@ function startApp(attrs) {
   if (!attrs) { attrs = {}; }
 
   var loadInitializers = attrs.loadInitializers;
+  var routes = attrs.routes;
 
   var attributes = Ember.merge({
     // useful Test defaults
@@ -14,9 +15,16 @@ function startApp(attrs) {
   }, attrs); // but you can override;
 
   var Application = Ember.Application.extend();
-  Application.Router = Ember.Router.extend({
+
+  var Router = Ember.Router.extend({
     location: 'none'
   });
+
+  if (routes) {
+    Router.map.call(Router, routes);
+  }
+
+  Application.Router = Router;
 
   if (loadInitializers) {
     initializeTorii(Application);
