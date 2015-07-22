@@ -5,7 +5,7 @@ function startApp(attrs) {
   if (!attrs) { attrs = {}; }
 
   var loadInitializers = attrs.loadInitializers;
-  var routes = attrs.routes;
+  var Router = attrs.Router;
 
   var attributes = Ember.merge({
     // useful Test defaults
@@ -16,13 +16,9 @@ function startApp(attrs) {
 
   var Application = Ember.Application.extend();
 
-  var Router = Ember.Router.extend({
+  (Router || Ember.Router.extend()).reopen({
     location: 'none'
   });
-
-  if (routes) {
-    Router.map.call(Router, routes);
-  }
 
   Application.Router = Router;
 

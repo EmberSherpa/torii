@@ -71,13 +71,15 @@ test('checkLogin is called when an authenticated route is present', function(ass
   configuration.sessionServiceName = 'session';
 
   var routesConfigured = false;
+  var Router = Ember.Router.extend();
+  Router.map(function(){
+    routesConfigured = true;
+    authenticatedRoute(this, 'account');
+  });
 
   app = startApp({
     loadInitializers: true,
-    routes: function(){
-      routesConfigured = true;
-      authenticatedRoute(this, 'index');
-    }
+    Router: Router
   });
   container = app.__container__;
 
@@ -90,7 +92,13 @@ test('checkLogin is called when an authenticated route is present', function(ass
 
   var applicationRoute = container.lookup('route:application');
 
-  applicationRoute.beforeModel();
-  assert.ok(routesConfigured, 'Router map was called');
-  assert.ok(called, 'checkLogin was called');
+  Ember.run(function(){
+    app.advanceReadiness();
+  });
+
+  return app.boot().then(function(){
+    applicationRoute.beforeModel();
+    assert.ok(routesConfigured, 'Router map was called');
+    assert.ok(called, 'checkLogin was called');
+  });
 });
