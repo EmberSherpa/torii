@@ -17,6 +17,7 @@
     "main": "ember-addon/index.js"
   },
   "devDependencies": {
+    "broccoli-merge-trees": "^0.2.2",
     "connect-redirection": "0.0.1",
     "grunt": "~0.4.2",
     "grunt-banner": "^0.2.3",

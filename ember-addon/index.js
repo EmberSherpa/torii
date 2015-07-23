@@ -10,11 +10,19 @@ module.exports = {
 
   treeForApp: function treeForApp(tree) {
     var Funnel = require('broccoli-funnel');
+    var mergeTrees = require('broccoli-merge-trees');
 
-    return new Funnel(tree, {
+    var initializers = new Funnel(tree, {
       srcDir: 'initializers',
       destDir: 'initializers'
     });
+
+    var instanceInitializers = new Funnel(tree, {
+      srcDir: 'instance-initializers',
+      destDir: 'instance-initializers'
+    })
+
+    return mergeTrees([initializers, instanceInitializers]);
   },
 
   treeForAddon: function treeForAddon() {
