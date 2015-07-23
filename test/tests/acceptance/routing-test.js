@@ -3,10 +3,10 @@ import configuration from 'torii/configuration';
 import AuthenticatedRouteMixin from 'torii/routing/authenticated-route-mixin';
 import authenticatedRoute from 'torii/routing';
 import {
-  resetAuthenticatedRoutes
+  getAuthenticatedRoutes
 } from 'torii/routing';
 
-var app, container, originalSessionServiceName, originalSessionProvider;
+var app, originalSessionServiceName, originalSessionProvider;
 
 module('Routing - Acceptance', {
   setup: function(){
@@ -23,84 +23,107 @@ module('Routing - Acceptance', {
   }
 });
 
-test('route mixin is not injected by default', function(assert){
-  app = startApp({loadInitializers: true});
-  container = app.__container__;
-
-  container.register('route:application', Ember.Route.extend());
-  var applicationRoute = container.lookup('route:application');
-
-  var isMixinAdded = AuthenticatedRouteMixin.detect(applicationRoute);
-  assert.ok(!isMixinAdded,
-    'authenticated route mixin was not mixed into to Route class');
-});
-
-test('route mixin is injected when sessionServiceName is set', function(assert){
-  configuration.sessionServiceName = 'session';
-
-  app = startApp({loadInitializers: true});
-  container = app.__container__;
-
-  container.register('route:application', Ember.Route.extend());
-  var applicationRoute = container.lookup('route:application');
-
-  var isMixinAdded = AuthenticatedRouteMixin.detect(applicationRoute);
-  assert.ok(isMixinAdded,
-    'authenticated route mixin was mixed into to Route class');
-});
-
-test('checkLogin is not called in absense of authenticated routes', function(assert){
-  assert.expect(1);
-  configuration.sessionServiceName = 'session';
-
-  app = startApp({loadInitializers: true});
-  container = app.__container__;
-
-  var called = false;
-  container.register('route:application', Ember.Route.extend({
-    checkLogin: function() {
-      called = true;
-    }
-  }));
-
-  var applicationRoute = container.lookup('route:application');
-  applicationRoute.beforeModel();
-  assert.ok(!called, 'checkLogin was not called');
-});
-
-test('checkLogin is called when an authenticated route is present', function(assert){
+test('ApplicationRoute#checkLogin is not called when no authenticated routes are present', function(assert){
   assert.expect(2);
   configuration.sessionServiceName = 'session';
 
   var routesConfigured = false;
-  var Router = Ember.Router.extend();
-  Router.map(function(){
-    routesConfigured = true;
-    authenticatedRoute(this, 'account');
+  var checkLoginCalled = false;
+
+  return bootApp({
+    map: function() {
+      routesConfigured = true;
+    },
+    container: function(container) {
+      container.register('route:application', Ember.Route.extend());
+    }
+  }).then(function(){
+    var applicationRoute = app.__container__.lookup('route:application');
+    applicationRoute.reopen({
+      checkLogin: function() {
+        checkLoginCalled = true;
+      }
+    })
+    applicationRoute.beforeModel();
+    assert.ok(routesConfigured, 'Router map was called');
+    assert.ok(!checkLoginCalled, 'checkLogin was not called');
   });
+})
+
+test('ApplicationRoute#checkLogin is called when an authenticated route is present', function(assert){
+  assert.expect(3);
+  configuration.sessionServiceName = 'session';
+
+  var routesConfigured = false;
+  var checkLoginCalled = false;
+
+  return bootApp({
+    map: function() {
+      routesConfigured = true;
+      authenticatedRoute(this, 'account');
+    },
+    container: function(container) {
+      container.register('route:application', Ember.Route.extend());
+      container.register('route:account', Ember.Route.extend());
+    }
+  }).then(function(){
+    var applicationRoute = app.__container__.lookup('route:application');
+    applicationRoute.reopen({
+      checkLogin: function() {
+        checkLoginCalled = true;
+      }
+    })
+    applicationRoute.beforeModel();
+    assert.ok(routesConfigured, 'Router map was called');
+    assert.ok(checkLoginCalled, 'checkLogin was called');
+    assert.ok(Ember.isEmpty(getAuthenticatedRoutes()),
+      'authenticated routes were reset after boot');
+  });
+});
+
+test('authenticated routes get authenticate method', function(assert){
+  assert.expect(2);
+  configuration.sessionServiceName = 'session';
+
+  var checkLoginCalled = false;
+
+  return bootApp({
+    map: function() {
+      this.route('home');
+      authenticatedRoute(this, 'account');
+    },
+    container: function(container) {
+      container.register('route:application', Ember.Route.extend());
+      container.register('route:account', Ember.Route.extend());
+      container.register('route:home', Ember.Route.extend());
+    }
+  }).then(function(){
+    var authenticatedRoute = app.__container__.lookup('route:account');
+    var unauthenticatedRoute = app.__container__.lookup('route:home');
+
+    assert.ok(authenticatedRoute.authenticate, "authenticate function is present");
+    assert.ok(!unauthenticatedRoute.authenticate, "authenticate function is not present");
+  });
+});
+
+function bootApp(attrs) {
+  var map = attrs.map || function(){};
+  var containerSetup = attrs.container || function() {};
+
+  var Router = Ember.Router.extend();
+
+  Router.map(map);
 
   app = startApp({
     loadInitializers: true,
     Router: Router
   });
-  container = app.__container__;
 
-  var called = false;
-  container.register('route:application', Ember.Route.extend({
-    checkLogin: function() {
-      called = true;
-    }
-  }));
-
-  var applicationRoute = container.lookup('route:application');
+  containerSetup(app.__container__);
 
   Ember.run(function(){
     app.advanceReadiness();
   });
 
-  return app.boot().then(function(){
-    applicationRoute.beforeModel();
-    assert.ok(routesConfigured, 'Router map was called');
-    assert.ok(called, 'checkLogin was called');
-  });
-});
+  return app.boot();
+}
