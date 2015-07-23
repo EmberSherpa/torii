@@ -1,8 +1,8 @@
-import AuthenticatedRouteMixin from 'torii/routing/authenticated-route-mixin';
+import ApplicationRouteMixin from 'torii/routing/application-route-mixin';
 
-module('Authenticated Route Mixin - Unit');
+module('Application Route Mixin - Unit');
 
-test("beforeModel calls authenicate after _super#beforeModel", function(assert){
+test("beforeModel calls checkLogin after _super#beforeModel", function(assert){
   var route;
   var callOrder = [];
   route = Ember.Route
@@ -11,8 +11,8 @@ test("beforeModel calls authenicate after _super#beforeModel", function(assert){
         callOrder.push('super');
       }
     })
-    .extend(AuthenticatedRouteMixin, {
-      authenticate: function() {
+    .extend(ApplicationRouteMixin, {
+      checkLogin: function() {
         callOrder.push('mixin');
       }
     }).create();
@@ -20,10 +20,10 @@ test("beforeModel calls authenicate after _super#beforeModel", function(assert){
   route.beforeModel();
 
   assert.deepEqual(callOrder, ['super', 'mixin'],
-    'super#beforeModel is called before authenicate');
+    'super#beforeModel is called mixin#beforeModel');
 });
 
-test("route respects beforeModel super priority when promise is returned", function(assert){
+test("beforeModel calls checkLogin after promise from _super#beforeModel is resolved", function(assert){
   var route;
   var callOrder = [];
   route = Ember.Route
@@ -37,8 +37,8 @@ test("route respects beforeModel super priority when promise is returned", funct
         })
       }
     })
-    .extend(AuthenticatedRouteMixin, {
-      authenticate: function() {
+    .extend(ApplicationRouteMixin, {
+      checkLogin: function() {
         callOrder.push('mixin');
       }
     }).create();
@@ -46,6 +46,6 @@ test("route respects beforeModel super priority when promise is returned", funct
   return route.beforeModel()
     .then(function(){
       assert.deepEqual(callOrder, ['super', 'mixin'],
-        'super#beforeModel is called before authenticate');
+        'super#beforeModel is called before mixin#beforeModel');
     });
 });
