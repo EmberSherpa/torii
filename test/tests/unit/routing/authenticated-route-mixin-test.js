@@ -49,3 +49,85 @@ test("route respects beforeModel super priority when promise is returned", funct
         'super#beforeModel is called before authenticate');
     });
 });
+
+test('previously successful authentication results in successful resolution', function(assert){
+  assert.expect(1);
+  var route = createAuthenticatedRoute({
+    session: {
+      isAuthenticated: true
+    }
+  });
+
+  return route.authenticate()
+    .then(function(){
+      assert.ok(true);
+    })
+});
+
+test('unattempted authentication results in authentication attempt', function(assert){
+  assert.expect(1);
+  var fetchDefaultProviderCalled = false;
+  var route = createAuthenticatedRoute({
+    session: {
+      isAuthenticated: undefined,
+      fetchDefaultProvider: function(){
+        fetchDefaultProviderCalled = true;
+        return Ember.RSVP.resolve();
+      }
+    }
+  });
+  return route.authenticate()
+    .then(function(){
+      assert.ok(fetchDefaultProviderCalled, 'fetch default provider was called');
+    });
+});
+
+test('failed authentication calls accessDenied', function(assert){
+  assert.expect(2);
+  var fetchDefaultProviderCalled = false;
+  var accessDeniedCalled = false;
+  var route = createAuthenticatedRoute({
+    session: {
+      isAuthenticated: undefined,
+      fetchDefaultProvider: function(){
+        fetchDefaultProviderCalled = true;
+        return Ember.RSVP.reject();
+      }
+    },
+    accessDenied: function() {
+      accessDeniedCalled = true;
+    }
+  });
+  return route.authenticate()
+    .then(function(){
+      assert.ok(fetchDefaultProviderCalled, 'fetch default provider was called');
+      assert.ok(accessDeniedCalled, 'accessDenied was called');
+    });
+});
+
+test('failed authentication causes accessDenied action to be sent', function(assert){
+  assert.expect(2);
+  var fetchDefaultProviderCalled = false;
+  var sentActionName;
+  var route = createAuthenticatedRoute({
+    session: {
+      isAuthenticated: undefined,
+      fetchDefaultProvider: function(){
+        fetchDefaultProviderCalled = true;
+        return Ember.RSVP.reject();
+      }
+    },
+    send: function(actionName) {
+      sentActionName = actionName;
+    }
+  });
+  return route.authenticate()
+    .then(function(){
+      assert.ok(fetchDefaultProviderCalled, 'fetch default provider was called');
+      assert.equal(sentActionName, 'accessDenied', 'accessDenied action was sent');
+    });
+});
+
+function createAuthenticatedRoute(attrs) {
+  return Ember.Router.extend(AuthenticatedRouteMixin, attrs).create()
+}

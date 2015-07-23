@@ -49,3 +49,23 @@ test("beforeModel calls checkLogin after promise from _super#beforeModel is reso
         'super#beforeModel is called before mixin#beforeModel');
     });
 });
+
+test('checkLogic fails silently when no session is available', function(assert){
+  assert.expect(2);
+
+  var fetchDefaultProviderCalled = false;
+  var route = Ember.Route.extend(ApplicationRouteMixin, {
+    session: {
+      fetchDefaultProvider: function() {
+        fetchDefaultProviderCalled = true;
+        return Ember.RSVP.reject('no session is available');
+      }
+    }
+  }).create();
+
+  route.checkLogin()
+    .then(function(){
+      assert.ok(fetchDefaultProviderCalled, 'fetch default provider was called');
+      assert.ok('successful callback inspite of rejection');
+    })
+})
