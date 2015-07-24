@@ -1,10 +1,6 @@
 import startApp from 'test/helpers/start-app';
 import configuration from 'torii/configuration';
 import AuthenticatedRouteMixin from 'torii/routing/authenticated-route-mixin';
-import authenticatedRoute from 'torii/routing';
-import {
-  getAuthenticatedRoutes
-} from 'torii/routing';
 
 var app, originalSessionServiceName, originalSessionProvider;
 
@@ -51,7 +47,7 @@ test('ApplicationRoute#checkLogin is not called when no authenticated routes are
 })
 
 test('ApplicationRoute#checkLogin is called when an authenticated route is present', function(assert){
-  assert.expect(3);
+  assert.expect(2);
   configuration.sessionServiceName = 'session';
 
   var routesConfigured = false;
@@ -60,7 +56,7 @@ test('ApplicationRoute#checkLogin is called when an authenticated route is prese
   return bootApp({
     map: function() {
       routesConfigured = true;
-      authenticatedRoute(this, 'account');
+      this.authenticatedRoute('account');
     },
     container: function(container) {
       container.register('route:application', Ember.Route.extend());
@@ -72,12 +68,10 @@ test('ApplicationRoute#checkLogin is called when an authenticated route is prese
       checkLogin: function() {
         checkLoginCalled = true;
       }
-    })
+    });
     applicationRoute.beforeModel();
     assert.ok(routesConfigured, 'Router map was called');
     assert.ok(checkLoginCalled, 'checkLogin was called');
-    assert.ok(Ember.isEmpty(getAuthenticatedRoutes()),
-      'authenticated routes were reset after boot');
   });
 });
 
@@ -90,7 +84,7 @@ test('authenticated routes get authenticate method', function(assert){
   return bootApp({
     map: function() {
       this.route('home');
-      authenticatedRoute(this, 'account');
+      this.authenticatedRoute('account');
     },
     container: function(container) {
       container.register('route:application', Ember.Route.extend());
