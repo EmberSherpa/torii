@@ -66,6 +66,6 @@ test('checkLogic fails silently when no session is available', function(assert){
   route.checkLogin()
     .then(function(){
       assert.ok(fetchDefaultProviderCalled, 'fetch default provider was called');
-      assert.ok('successful callback inspite of rejection');
+      assert.ok('successful callback in spite of rejection');
     })
 })
