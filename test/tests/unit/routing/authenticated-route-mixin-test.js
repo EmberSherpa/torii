@@ -64,7 +64,7 @@ test('previously successful authentication results in successful resolution', fu
     })
 });
 
-test('unattempted authentication results in authentication attempt', function(assert){
+test('attempting authentication calls fetchDefaultProvider', function(assert){
   assert.expect(1);
   var fetchDefaultProviderCalled = false;
   var route = createAuthenticatedRoute({
