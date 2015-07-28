@@ -116,12 +116,13 @@ test('failed authentication causes accessDenied action to be sent', function(ass
         fetchDefaultProviderCalled = true;
         return Ember.RSVP.reject();
       }
-    },
+    }
+  });
+  return route.authenticate({
     send: function(actionName) {
       sentActionName = actionName;
     }
-  });
-  return route.authenticate()
+  })
     .then(function(){
       assert.ok(fetchDefaultProviderCalled, 'fetch default provider was called');
       assert.equal(sentActionName, 'accessDenied', 'accessDenied action was sent');
