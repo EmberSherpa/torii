@@ -100,6 +100,26 @@ test('authenticated routes get authenticate method', function(assert){
   });
 });
 
+test('undefined sessionProvider throws an exception', function(assert){
+  assert.expect(1);
+  configuration.sessionServiceName = 'session';
+
+  return bootApp({
+    map: function() {
+      this.authenticatedRoute('account');
+    },
+    container: function(container) {
+      container.register('route:application', Ember.Route.extend());
+      container.register('route:account', Ember.Route.extend());
+    }
+  }).then(function(){
+    var authenticatedRoute = app.__container__.lookup('route:account');
+    assert.throws(function(){
+      authenticatedRoute.beforeModel();
+    }, 'You must specify a session provider in your torri configuration');
+  });
+});
+
 function bootApp(attrs) {
   var map = attrs.map || function(){};
   var containerSetup = attrs.container || function() {};
